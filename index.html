@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MorphoLLM ✦ Ethereal LLM Pipeline Explorer</title>
+  <meta name="description" content="An interactive, ethereal visualizer for the complete Large Language Model transformer inference pipeline with butterfly aesthetics.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Ambient Ethereal Background Canvas for Butterflies and Stardust Glow -->
+  <canvas id="butterflyCanvas" class="ambient-canvas"></canvas>
+  <div class="ethereal-radial-glow top-left"></div>
+  <div class="ethereal-radial-glow bottom-right"></div>
+  <div class="ethereal-radial-glow center-pulse"></div>
+
+  <!-- Main Application Wrapper -->
+  <div class="app-container">
+    <!-- Header Navigation -->
+    <header class="app-header glass-card">
+      <div class="brand-area">
+        <div class="brand-butterfly">
+          <svg class="morpho-logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="logoWingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#90e0ef" />
+                <stop offset="45%" stop-color="#00b4d8" />
+                <stop offset="85%" stop-color="#0077b6" />
+                <stop offset="100%" stop-color="#03045e" />
+              </linearGradient>
+              <filter id="etherealGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            <!-- Left Wing -->
+            <path class="wing wing-left" d="M 48 50 C 35 20, 10 20, 8 40 C 6 60, 25 75, 48 54 Z" fill="url(#logoWingGrad)" filter="url(#etherealGlow)"/>
+            <path class="wing wing-left-sub" d="M 48 54 C 30 58, 16 75, 25 88 C 35 98, 46 80, 48 58 Z" fill="url(#logoWingGrad)" opacity="0.85"/>
+            <!-- Right Wing -->
+            <path class="wing wing-right" d="M 52 50 C 65 20, 90 20, 92 40 C 94 60, 75 75, 52 54 Z" fill="url(#logoWingGrad)" filter="url(#etherealGlow)"/>
+            <path class="wing wing-right-sub" d="M 52 54 C 70 58, 84 75, 75 88 C 65 98, 54 80, 52 58 Z" fill="url(#logoWingGrad)" opacity="0.85"/>
+            <!-- Butterfly Body -->
+            <ellipse cx="50" cy="54" rx="2.5" ry="18" fill="#e0f2fe" filter="url(#etherealGlow)"/>
+            <!-- Antennae -->
+            <path d="M 49 38 Q 42 25 35 24 M 51 38 Q 58 25 65 24" stroke="#caf0f8" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">
+            <span class="gradient-text">MorphoLLM</span>
+            <span class="version-tag">Pipeline Explorer</span>
+          </div>
+          <p class="brand-sub">Visualizing the inner journey of Large Language Models through an ethereal lens</p>
+        </div>
+      </div>
+
+      <!-- Top Controls & Toggles -->
+      <div class="header-controls">
+        <div class="control-group">
+          <label for="modelSelect">
+            <span class="icon">✨</span> Architecture
+          </label>
+          <select id="modelSelect" class="custom-select">
+            <option value="gpt2">GPT-2 (Causal MHA + GELU)</option>
+            <option value="llama3" selected>Llama 3.2 (RoPE + SwiGLU + RMSNorm)</option>
+            <option value="deepseek">DeepSeek Toy (MoE & Multi-Head)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="presetSelect">
+            <span class="icon">📜</span> Presets
+          </label>
+          <select id="presetSelect" class="custom-select">
+            <option value="butterfly">The ethereal blue butterfly dances over the</option>
+            <option value="reasoning">To discover the truth we must explore</option>
+            <option value="code">def generate_starlight(prompt): return</option>
+            <option value="simple">The quick azure fox jumps over</option>
+          </select>
+        </div>
+
+        <div class="header-buttons">
+          <button id="butterflyModeToggle" class="btn-ghost active" title="Toggle Fluttering Butterflies & Stardust">
+            <span class="butterfly-icon-btn">🦋</span>
+            <span class="btn-label">Butterflies: On</span>
+          </button>
+          <button id="deepInspectorBtn" class="btn-ghost" title="Toggle Math & Tensor Deep Inspector">
+            <span class="icon">🔬</span>
+            <span class="btn-label">Math Inspector</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Pipeline Stage Stepper Bar -->
+    <nav class="pipeline-stepper-wrap glass-card">
+      <div class="pipeline-stepper-header">
+        <div class="stepper-title">
+          <span class="pulse-dot"></span>
+          <span>TRANSFORMER INFERENCE PIPELINE STAGES</span>
+        </div>
+        <div class="stepper-actions">
+          <button id="btnPrevStage" class="stepper-nav-btn" title="Previous Stage">‹ Previous</button>
+          <span id="stageCounter" class="stage-counter">Stage 1 of 7</span>
+          <button id="btnNextStage" class="stepper-nav-btn primary" title="Next Stage">Next Stage ›</button>
+        </div>
+      </div>
+
+      <div class="stages-track" id="stagesTrack">
+        <!-- Stage items will be active/completed via JS -->
+        <button class="stage-node active" data-stage="1">
+          <div class="stage-icon-box">
+            <span class="stage-glyph">🔤</span>
+            <span class="stage-num">01</span>
+          </div>
+          <div class="stage-meta">
+            <div class="stage-name">Tokenization</div>
+            <div class="stage-desc">BPE Text to IDs</div>
+          </div>
+          <span class="butterfly-accent">🦋</span>
+        </button>
+
+        <div class="stage-connector"></div>
+
+        <button class="stage-node" data-stage="2">
+          <div class="stage-icon-box">
+            <span class="stage-glyph">🧬</span>
+            <span class="stage-num">02</span>
+          </div>
+          <div class="stage-meta">
+            <div class="stage-name">Embeddings</div>
+            <div class="stage-desc">Lookup & RoPE / Pos</div>
+          </div>
+          <span class="butterfly-accent">🦋</span>
+        </button>
+
+        <div class="stage-connector"></div>
+
+        <button class="stage-node" data-stage="3">
+          <div class="stage-icon-box">
+            <span class="stage-glyph">👁️</span>
+            <span class="stage-num">03</span>
+          </div>
+          <div class="stage-meta">
+            <div class="stage-name">Self-Attention</div>
+            <div class="stage-desc">Q, K, V & Masking</div>
+          </div>
+          <span class="butterfly-accent">🦋</span>
+        </button>
+
+        <div class="stage-connector"></div>
+
+        <button class="stage-node" data-stage="4">
+          <div class="stage-icon-box">
+            <span class="stage-glyph">⚡</span>
+            <span class="stage-num">04</span>
+          </div>
+          <div class="stage-meta">
+            <div class="stage-name">FFN / SwiGLU</div>
+            <div class="stage-desc">MLP Projection</div>
+          </div>
+          <span class="butterfly-accent">🦋</span>
+        </button>
+
+        <div class="stage-connector"></div>
+
+        <button class="stage-node" data-stage="5">
+          <div class="stage-icon-box">
+            <span class="stage-glyph">🌊</span>
+            <span class="stage-num">05</span>
+          </div>
+          <div class="stage-meta">
+            <div class="stage-name">Norm & Residual</div>
+            <div class="stage-desc">RMSNorm Stream</div>
+          </div>
+          <span class="butterfly-accent">🦋</span>
+        </button>
+
+        <div class="stage-connector"></div>
+
+        <button class="stage-node" data-stage="6">
+          <div class="stage-icon-box">
+            <span class="stage-glyph">📊</span>
+            <span class="stage-num">06</span>
+          </div>
+          <div class="stage-meta">
+            <div class="stage-name">LM Head</div>
+            <div class="stage-desc">Unembedding Logits</div>
+          </div>
+          <span class="butterfly-accent">🦋</span>
+        </button>
+
+        <div class="stage-connector"></div>
+
+        <button class="stage-node" data-stage="7">
+          <div class="stage-icon-box">
+            <span class="stage-glyph">🎲</span>
+            <span class="stage-num">07</span>
+          </div>
+          <div class="stage-meta">
+            <div class="stage-name">Sampling</div>
+            <div class="stage-desc">Temp & Top-p / Top-k</div>
+          </div>
+          <span class="butterfly-accent">🦋</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Workspace: Split Interactive Visualizer & Math Inspector -->
+    <main class="main-layout" id="mainLayout">
+      <!-- Active Stage View Container -->
+      <section class="stage-view-section glass-card" id="stageViewSection">
+        
+        <!-- Stage 1: Tokenization -->
+        <div class="stage-content" id="stageContent-1">
+          <div class="stage-header-row">
+            <div>
+              <span class="badge-tag">Stage 1 of 7</span>
+              <h2 class="stage-heading">Subword Tokenization (BPE)</h2>
+              <p class="stage-subheading">LLMs cannot read raw characters; text is partitioned into subword tokens, each mapped to a unique integer ID in the vocabulary.</p>
+            </div>
+            <div class="stage-badge-butterfly">🦋</div>
+          </div>
+
+          <div class="input-card">
+            <div class="input-card-header">
+              <label for="promptInput">Input Prompt</label>
+              <span class="input-char-stats" id="charStats">39 characters • 8 tokens</span>
+            </div>
+            <div class="input-box-wrapper">
+              <input type="text" id="promptInput" value="The ethereal blue butterfly dances over the" placeholder="Type custom text to tokenize..." class="custom-input">
+              <button id="btnResetPrompt" class="btn-chip" title="Reset to preset">Reset</button>
+            </div>
+          </div>
+
+          <!-- Token visualizer output -->
+          <div class="token-chips-card">
+            <div class="section-subhead">
+              <span>Tokenized Sequence & Byte Breakdown</span>
+              <span class="hint-text">Hover over tokens to inspect byte details and embedding indices</span>
+            </div>
+            <div class="token-chips-display" id="tokenChipsDisplay">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="token-details-grid">
+            <div class="token-table-wrap">
+              <table class="ethereal-table" id="tokenTable">
+                <thead>
+                  <tr>
+                    <th>Index</th>
+                    <th>Token Text</th>
+                    <th>Token ID</th>
+                    <th>Length</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody id="tokenTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+            <div class="token-meta-box">
+              <h3>Tokenizer Properties</h3>
+              <ul class="meta-list">
+                <li><span>Vocabulary Size (|V|):</span> <strong>32,000 (Toy Llama) / 50,257 (GPT-2)</strong></li>
+                <li><span>Algorithm:</span> <strong>Byte-Pair Encoding (BPE) with UTF-8 byte fallbacks</strong></li>
+                <li><span>Special Tokens:</span> <code>&lt;|begin_of_text|&gt;</code>, <code>&lt;|end_of_text|&gt;</code></li>
+                <li><span>Average Compression:</span> <strong>~3.8 chars per token</strong></li>
+              </ul>
+              <div class="token-did-you-know">
+                <span class="star-icon">✦</span>
+                <p>Whitespace is preserved as subword prefixes (e.g. <code>␣butterfly</code> vs <code>butterfly</code>), meaning capitalization and punctuation alter token IDs!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 2: Embeddings & Positional Encodings -->
+        <div class="stage-content hidden" id="stageContent-2">
+          <div class="stage-header-row">
+            <div>
+              <span class="badge-tag">Stage 2 of 7</span>
+              <h2 class="stage-heading">Token Embeddings & Positional Encoding</h2>
+              <p class="stage-subheading">Token IDs are converted into dense vectors of dimension $d_{model}$. Since self-attention is permutation-invariant, positional signals (RoPE or Sinusoidal) are infused.</p>
+            </div>
+            <div class="stage-badge-butterfly">🦋</div>
+          </div>
+
+          <div class="controls-pill-row">
+            <div class="pill-group">
+              <span class="pill-label">Positional Scheme:</span>
+              <button class="pill-btn active" id="btnPosRoPE">Rotary (RoPE)</button>
+              <button class="pill-btn" id="btnPosSinusoidal">Sinusoidal</button>
+              <button class="pill-btn" id="btnPosLearned">Learned (GPT-2)</button>
+            </div>
+            <div class="pill-group">
+              <span class="pill-label">View Dimension:</span>
+              <span class="badge-small">$d_{model} = 64$ (visualized)</span>
+            </div>
+          </div>
+
+          <!-- Embedding Matrix Heatmap visualizer -->
+          <div class="heatmap-card">
+            <div class="heatmap-header">
+              <span>Embedding Matrix ($X_0 \in \mathbb{R}^{seq \times d_{model}}$)</span>
+              <span class="hint-text">Hover any vector cell to see numerical value & channel</span>
+            </div>
+            <div class="vector-heatmap-scroll" id="embeddingHeatmap">
+              <!-- Dynamically rendered -->
+            </div>
+            <div class="heatmap-legend">
+              <span>Negative (-1.0)</span>
+              <div class="legend-gradient"></div>
+              <span>Positive (+1.0)</span>
+              <span class="legend-value-inspector" id="embeddingCellInspector">Hover a cell to inspect</span>
+            </div>
+          </div>
+
+          <!-- RoPE rotation animation / Sinusoidal visualizer -->
+          <div class="pos-encoding-card">
+            <div class="card-inner-split">
+              <div class="pos-canvas-wrap">
+                <h4>Rotary Position Embedding (RoPE) Angle Phase Space</h4>
+                <p class="canvas-sub">Tokens rotate in 2D coordinate pairs by angle $m \cdot \theta_i$. Distant tokens have larger relative phase angle.</p>
+                <canvas id="ropeCanvas" width="480" height="180"></canvas>
+              </div>
+              <div class="pos-details-wrap">
+                <h4>Why RoPE is Revolutionary</h4>
+                <p>Unlike absolute positional embeddings, <strong>RoPE preserves relative distance</strong> via complex rotation: $\langle R_{\Theta, m} q, R_{\Theta, n} k \rangle = g(q, k, m - n)$.</p>
+                <div class="formula-box">
+                  <code>R_{\Theta, m}^d = \text{diag}(R_{\theta_1, m}, R_{\theta_2, m}, \dots)</code>
+                </div>
+                <div class="mini-tag-list">
+                  <span class="mini-tag">Llama 3</span>
+                  <span class="mini-tag">Mistral</span>
+                  <span class="mini-tag">Gemma</span>
+                  <span class="mini-tag">DeepSeek</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 3: Multi-Head Self-Attention & Causal Masking -->
+        <div class="stage-content hidden" id="stageContent-3">
+          <div class="stage-header-row">
+            <div>
+              <span class="badge-tag">Stage 3 of 7</span>
+              <h2 class="stage-heading">Multi-Head Causal Self-Attention</h2>
+              <p class="stage-subheading">Tokens query one another to aggregate contextual information. A causal lower-triangular mask ensures no token can peek into the future.</p>
+            </div>
+            <div class="stage-badge-butterfly">🦋</div>
+          </div>
+
+          <!-- Attention Controls -->
+          <div class="attention-controls-row">
+            <div class="pill-group">
+              <span class="pill-label">Attention Head:</span>
+              <button class="pill-btn active head-btn" data-head="0">Head 1 (Recency)</button>
+              <button class="pill-btn head-btn" data-head="1">Head 2 (Subject/Verb)</button>
+              <button class="pill-btn head-btn" data-head="2">Head 3 (Broad Context)</button>
+              <button class="pill-btn head-btn" data-head="3">Head 4 (Induction/Pattern)</button>
+            </div>
+            <div class="pill-group">
+              <span class="pill-label">Masking:</span>
+              <span class="badge-accent">Causal Triangular Mask Enabled</span>
+            </div>
+          </div>
+
+          <!-- Attention Mechanism Breakdown -->
+          <div class="attention-pipeline-diagram">
+            <div class="attn-step-box">
+              <div class="box-title">1. Projections</div>
+              <div class="box-math">$Q = X W_Q$<br>$K = X W_K$<br>$V = X W_V$</div>
+            </div>
+            <div class="attn-arrow">➔</div>
+            <div class="attn-step-box">
+              <div class="box-title">2. Scaled Dot-Product</div>
+              <div class="box-math">$S = \frac{Q K^T}{\sqrt{d_k}} + M$</div>
+            </div>
+            <div class="attn-arrow">➔</div>
+            <div class="attn-step-box">
+              <div class="box-title">3. Softmax Weights</div>
+              <div class="box-math">$A = \text{softmax}(S)$</div>
+            </div>
+            <div class="attn-arrow">➔</div>
+            <div class="attn-step-box">
+              <div class="box-title">4. Value Aggregation</div>
+              <div class="box-math">$\text{Head} = A \cdot V$</div>
+            </div>
+          </div>
+
+          <!-- Interactive Attention Heatmap & Flow -->
+          <div class="attn-visualizer-grid">
+            <div class="attn-matrix-panel">
+              <div class="panel-header">
+                <h4>Causal Attention Weights Matrix ($A \in [N \times N]$)</h4>
+                <span class="hint-text">Hover any cell $(i, j)$ to see attention score from token $i$ to $j$</span>
+              </div>
+              <div class="attn-matrix-container" id="attnMatrixContainer">
+                <!-- Dynamically built -->
+              </div>
+              <div class="attn-cell-info" id="attnCellInfo">
+                Hover over a matrix cell to examine query-key alignment
+              </div>
+            </div>
+
+            <!-- Attention Flow Links -->
+            <div class="attn-flow-panel">
+              <div class="panel-header">
+                <h4>Attention Token Connections</h4>
+                <span class="hint-text">Active query token attention distribution</span>
+              </div>
+              <div class="attn-token-links" id="attnTokenLinks">
+                <!-- Dynamically populated with token bars -->
+              </div>
+              <div class="attn-explanation-box">
+                <span class="butterfly-mini">🦋</span>
+                <p id="headExplanationText">Head 1 specializes in strong local recency: tokens pay heavy attention to their immediate predecessor token.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 4: Feed-Forward Network & SwiGLU / GELU -->
+        <div class="stage-content hidden" id="stageContent-4">
+          <div class="stage-header-row">
+            <div>
+              <span class="badge-tag">Stage 4 of 7</span>
+              <h2 class="stage-heading">Feed-Forward Network (FFN / MLP) & SwiGLU</h2>
+              <p class="stage-subheading">While attention routes information between tokens, the MLP network processes tokens individually, acting as key-value memory banks for factual knowledge.</p>
+            </div>
+            <div class="stage-badge-butterfly">🦋</div>
+          </div>
+
+          <div class="controls-pill-row">
+            <div class="pill-group">
+              <span class="pill-label">Activation Function:</span>
+              <button class="pill-btn active" id="btnActSwiGLU">SwiGLU (Llama 3)</button>
+              <button class="pill-btn" id="btnActGELU">GELU (GPT-2/4)</button>
+              <button class="pill-btn" id="btnActReLU">Standard ReLU</button>
+            </div>
+            <div class="pill-group">
+              <span class="pill-label">Hidden Dimension Expansion:</span>
+              <span class="badge-small">$d_{ffn} = \frac{8}{3} \times d_{model}$ (or $4 \times d_{model}$)</span>
+            </div>
+          </div>
+
+          <!-- SwiGLU / MLP Architecture Diagram -->
+          <div class="ffn-architecture-card">
+            <div class="ffn-flow-diagram">
+              <div class="ffn-node input-node">
+                <span class="node-label">Token Vector $x$</span>
+                <span class="dim-tag">$[d_{model}]$</span>
+              </div>
+              <div class="ffn-branch-split">
+                <div class="branch-arm">
+                  <div class="ffn-op-box">
+                    <span class="op-title">Gate Projection</span>
+                    <code>x \cdot W_{gate}</code>
+                  </div>
+                  <div class="ffn-op-box active-activation">
+                    <span class="op-title">SiLU Activation</span>
+                    <code>\text{swish}(z) = z \cdot \sigma(z)</code>
+                  </div>
+                </div>
+                <div class="branch-center-op">
+                  <div class="op-elementwise">
+                    <span>Elementwise Multiply</span>
+                    <strong>⊗</strong>
+                  </div>
+                </div>
+                <div class="branch-arm">
+                  <div class="ffn-op-box">
+                    <span class="op-title">Up Projection</span>
+                    <code>x \cdot W_{up}</code>
+                  </div>
+                  <div class="ffn-dim-holder">$[d_{ffn}]$</div>
+                </div>
+              </div>
+              <div class="ffn-node down-node">
+                <span class="node-label">Down Projection $W_{down}$</span>
+                <span class="dim-tag">$[d_{model}]$ Output</span>
+              </div>
+            </div>
+
+            <!-- Interactive Activation Function Plot -->
+            <div class="activation-plot-card">
+              <h4>Interactive Non-Linearity Curve</h4>
+              <p class="plot-sub">Notice how SwiGLU (SiLU) allows small negative gradients to pass through smoothly without zeroing out.</p>
+              <canvas id="activationCanvas" width="420" height="190"></canvas>
+              <div class="plot-hover-val" id="plotHoverVal">Hover over curve to inspect x ➔ y</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 5: Normalization & Residual Stream -->
+        <div class="stage-content hidden" id="stageContent-5">
+          <div class="stage-header-row">
+            <div>
+              <span class="badge-tag">Stage 5 of 7</span>
+              <h2 class="stage-heading">Normalization & The Residual Highway</h2>
+              <p class="stage-subheading">The residual stream acts as an unimpeded highway across layers. RMSNorm stabilizes gradient flow by normalizing root-mean-square activations.</p>
+            </div>
+            <div class="stage-badge-butterfly">🦋</div>
+          </div>
+
+          <div class="controls-pill-row">
+            <div class="pill-group">
+              <span class="pill-label">Normalization Method:</span>
+              <button class="pill-btn active" id="btnNormRMS">RMSNorm (Llama/Mistral)</button>
+              <button class="pill-btn" id="btnNormLayer">LayerNorm with Bias (GPT-2)</button>
+            </div>
+            <div class="pill-group">
+              <span class="pill-label">Scaling Factor ($\gamma$):</span>
+              <input type="range" id="gammaSlider" min="0.5" max="2.0" step="0.1" value="1.0" class="mini-slider">
+              <span id="gammaVal" class="slider-val">1.0</span>
+            </div>
+          </div>
+
+          <!-- Residual Highway Visualizer -->
+          <div class="residual-visualizer-card">
+            <div class="highway-diagram">
+              <div class="highway-node">
+                <div class="highway-badge">Input Residual $X_{l-1}$</div>
+                <div class="vector-bar-mini" id="resInputBar"></div>
+              </div>
+              <div class="highway-split">
+                <div class="highway-trunk">
+                  <div class="trunk-label">Unbroken Residual Stream</div>
+                  <div class="trunk-stream-flow">
+                    <span class="stream-particle">🦋</span>
+                    <span class="stream-particle">✦</span>
+                    <span class="stream-particle">🦋</span>
+                  </div>
+                </div>
+                <div class="highway-subblock">
+                  <div class="subblock-step">RMSNorm</div>
+                  <div class="subblock-step">Attention / MLP Block</div>
+                  <div class="subblock-step">Sub-layer Output $\Delta X$</div>
+                </div>
+              </div>
+              <div class="highway-join">
+                <span class="join-symbol">⊕</span>
+                <span class="join-text">Residual Addition: $X_l = X_{l-1} + \Delta X$</span>
+              </div>
+              <div class="highway-node">
+                <div class="highway-badge">Updated State $X_l$</div>
+                <div class="vector-bar-mini" id="resOutputBar"></div>
+              </div>
+            </div>
+
+            <!-- Formula Comparison -->
+            <div class="norm-math-comparison">
+              <div class="norm-card active-card" id="cardRMSNorm">
+                <h4>RMSNorm (Modern Standard)</h4>
+                <code>\text{RMSNorm}(x) = \frac{x}{\sqrt{\frac{1}{d}\sum_{i=1}^d x_i^2 + \epsilon}} \odot \gamma</code>
+                <p>Omits mean centering and bias $\beta$, saving ~7% memory bandwidth with identical performance.</p>
+              </div>
+              <div class="norm-card" id="cardLayerNorm">
+                <h4>LayerNorm (Classic Standard)</h4>
+                <code>\text{LayerNorm}(x) = \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} \odot \gamma + \beta</code>
+                <p>Centers around mean $\mu$ and tracks learnable bias $\beta$.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 6: LM Head & Unembedding Logits -->
+        <div class="stage-content hidden" id="stageContent-6">
+          <div class="stage-header-row">
+            <div>
+              <span class="badge-tag">Stage 6 of 7</span>
+              <h2 class="stage-heading">LM Head (Unembedding) & Raw Logits</h2>
+              <p class="stage-subheading">The final normalized representation of the last token is projected via the unembedding matrix $W_U \in \mathbb{R}^{d_{model} \times |V|}$ into raw logit scores for every vocabulary token.</p>
+            </div>
+            <div class="stage-badge-butterfly">🦋</div>
+          </div>
+
+          <div class="unembed-grid">
+            <!-- Last Token Vector Inspector -->
+            <div class="last-token-panel">
+              <h4>Last Token Hidden State ($h_{last}$)</h4>
+              <p class="small-text">This single vector summarizes the full cumulative context of all previous tokens.</p>
+              <div class="vector-strip-view" id="lastTokenVectorStrip">
+                <!-- Rendered dynamically -->
+              </div>
+              <div class="unembed-math-badge">
+                <code>\text{Logits} = h_{last} \cdot W_U</code>
+              </div>
+            </div>
+
+            <!-- Top Raw Logits Chart -->
+            <div class="logits-chart-panel">
+              <div class="panel-header">
+                <h4>Top Candidate Logits (Unscaled Scores)</h4>
+                <span class="hint-text">Higher positive logits indicate higher model affinity</span>
+              </div>
+              <div class="logits-bars-list" id="logitsBarsList">
+                <!-- Dynamically generated bars -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 7: Sampling, Softmax & Next Token Generation -->
+        <div class="stage-content hidden" id="stageContent-7">
+          <div class="stage-header-row">
+            <div>
+              <span class="badge-tag">Stage 7 of 7</span>
+              <h2 class="stage-heading">Softmax Probability & Autoregressive Sampling</h2>
+              <p class="stage-subheading">Convert unconstrained logits into a probability distribution via Softmax, apply Temperature, Top-$k$, and Nucleus (Top-$p$) filters, and sample the next token.</p>
+            </div>
+            <div class="stage-badge-butterfly">🦋</div>
+          </div>
+
+          <!-- Interactive Sampling Controls -->
+          <div class="sampling-controls-grid">
+            <div class="control-card">
+              <div class="control-header">
+                <label for="tempSlider">Temperature ($T$)</label>
+                <span id="tempVal" class="control-val">0.70</span>
+              </div>
+              <input type="range" id="tempSlider" min="0.05" max="2.0" step="0.05" value="0.70" class="custom-slider">
+              <div class="slider-hints">
+                <span>0.1 (Focused & Greedy)</span>
+                <span>1.0 (Balanced)</span>
+                <span>2.0 (Creative & Chaotic)</span>
+              </div>
+            </div>
+
+            <div class="control-card">
+              <div class="control-header">
+                <label for="topKSlider">Top-$k$ Filtering</label>
+                <span id="topKVal" class="control-val">5</span>
+              </div>
+              <input type="range" id="topKSlider" min="1" max="15" step="1" value="5" class="custom-slider">
+              <div class="slider-hints">
+                <span>1 (Greedy Argmax)</span>
+                <span>5</span>
+                <span>15 (Broad Pool)</span>
+              </div>
+            </div>
+
+            <div class="control-card">
+              <div class="control-header">
+                <label for="topPSlider">Top-$p$ (Nucleus)</label>
+                <span id="topPVal" class="control-val">0.90</span>
+              </div>
+              <input type="range" id="topPSlider" min="0.1" max="1.0" step="0.05" value="0.90" class="custom-slider">
+              <div class="slider-hints">
+                <span>0.5 (Conservative)</span>
+                <span>0.9 (Standard)</span>
+                <span>1.0 (Full Tail)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Probability Distribution Chart -->
+          <div class="probabilities-card">
+            <div class="panel-header">
+              <h4>Candidate Probability Distribution $P(\text{token}_i)$</h4>
+              <span class="badge-accent" id="activeFilterBadge">Top-k (5) & Top-p (0.90) Active</span>
+            </div>
+            <div class="prob-distribution-list" id="probDistributionList">
+              <!-- Dynamically populated with glowing probability bars -->
+            </div>
+          </div>
+
+          <!-- Sampling Trigger & Generation Sandbox -->
+          <div class="sample-action-card">
+            <div class="sample-action-left">
+              <button id="btnSampleNext" class="btn-primary-glow">
+                <span class="butterfly-icon-btn">✨</span>
+                <span>Sample & Append Next Token</span>
+              </button>
+              <button id="btnAutoPlay" class="btn-ghost">
+                <span class="icon">▶</span>
+                <span id="autoPlayLabel">Autoregressive Stream</span>
+              </button>
+            </div>
+            <div class="sample-action-right">
+              <div class="sample-result-box" id="sampleResultBox">
+                <span class="result-label">Selected Token:</span>
+                <span class="result-token" id="selectedTokenDisplay">" blossoms"</span>
+                <span class="result-prob" id="selectedTokenProb">(38.4%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Side: Ethereal Math & Architecture Drawer / Inspector -->
+      <aside class="deep-inspector-aside glass-card" id="deepInspectorAside">
+        <div class="inspector-header">
+          <div class="inspector-title-wrap">
+            <span class="mini-butterfly">🦋</span>
+            <h3>Stage Math & Tensors</h3>
+          </div>
+          <button id="btnCloseInspector" class="close-inspector-btn" title="Close drawer">✕</button>
+        </div>
+
+        <div class="inspector-content">
+          <!-- Active Formula Box -->
+          <div class="inspector-card">
+            <div class="card-title">Active Mathematical Formulation</div>
+            <div class="math-display-card" id="inspectorMathFormula">
+              $$x_0 = W_e[t] + \text{RoPE}(t, m)$$
+            </div>
+          </div>
+
+          <!-- Tensor Shape Inspector -->
+          <div class="inspector-card">
+            <div class="card-title">Tensor Dimensionality</div>
+            <div class="tensor-shapes-list" id="inspectorTensorShapes">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+          <!-- Intuition & Deep Dive -->
+          <div class="inspector-card">
+            <div class="card-title">Core Intuition</div>
+            <p class="inspector-text" id="inspectorIntuition">
+              At this stage, symbolic discrete tokens are converted into high-dimensional points in a continuous vector space where geometric direction and distance encode semantic meaning.
+            </p>
+          </div>
+
+          <!-- Architectural Variations -->
+          <div class="inspector-card">
+            <div class="card-title">How Top Models Differ</div>
+            <ul class="differences-list" id="inspectorArchitectureNotes">
+              <li><strong>GPT-2/3:</strong> Learned absolute position embeddings + Standard Post-LN.</li>
+              <li><strong>Llama 3 / Mistral:</strong> Rotary embeddings (RoPE) + RMSNorm + SwiGLU.</li>
+              <li><strong>DeepSeek V3:</strong> Multi-Head Latent Attention (MLA) + DeepSeekMoE.</li>
+            </ul>
+          </div>
+
+          <!-- KV Cache Monitor -->
+          <div class="inspector-card kv-cache-card">
+            <div class="card-title">
+              <span>KV Cache Status</span>
+              <span class="badge-small">Inference Accelerator</span>
+            </div>
+            <div class="kv-stats">
+              <div class="kv-stat-item">
+                <span class="kv-label">Cached Tokens:</span>
+                <span class="kv-val" id="kvCachedTokensCount">8</span>
+              </div>
+              <div class="kv-stat-item">
+                <span class="kv-label">Memory Saved:</span>
+                <span class="kv-val">O(N) vs O(N²)</span>
+              </div>
+            </div>
+            <p class="kv-desc">During autoregressive generation, prior keys and values are cached so we only compute attention queries for the newly generated token!</p>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Bottom Generation Bar & Autoregressive Loop Display -->
+    <footer class="bottom-generation-bar glass-card">
+      <div class="gen-left">
+        <div class="gen-label">
+          <span class="butterfly-mini">🦋</span>
+          <span>Live Generated Stream:</span>
+        </div>
+        <div class="gen-sequence-display" id="genSequenceDisplay">
+          <span class="token-chip-seq base">The</span>
+          <span class="token-chip-seq base">ethereal</span>
+          <span class="token-chip-seq base">blue</span>
+          <span class="token-chip-seq base">butterfly</span>
+          <span class="token-chip-seq base">dances</span>
+          <span class="token-chip-seq base">over</span>
+          <span class="token-chip-seq base">the</span>
+        </div>
+      </div>
+      <div class="gen-right">
+        <button id="btnQuickSample" class="btn-stream-action primary">
+          <span>✨ Sample Token</span>
+        </button>
+        <button id="btnQuickReset" class="btn-stream-action">
+          <span>↺ Reset</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="butterflies.js"></script>
+  <script src="transformer-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
